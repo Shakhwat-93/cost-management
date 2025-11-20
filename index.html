@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construction Cost Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { background-color: #1f2937; color: white; transform: scale(1.05); }
+        .tab-inactive { background-color: rgba(255, 255, 255, 0.8); color: #374151; }
+        /* Loading Spinner */
+        .loader { border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #3498db; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen relative">
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbx7ceE3bILkhynoXbjOCAagq-I0erm_4x7BMt-LQ817N8VLnldNDsCVuaB_qlbuw-JH6Q/exec"; // <--- এইখানে লিংক বসান
+    </script>
+
+    <div class="fixed inset-0 z-[-1]">
+        <img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1920&auto=format&fit=crop" class="w-full h-full object-cover opacity-20">
+        <div class="absolute inset-0 bg-gray-100/40 backdrop-blur-[2px]"></div>
+    </div>
+
+    <header class="relative h-64 w-full overflow-hidden shadow-lg mb-8">
+        <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1920&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 to-black/40"></div>
+        <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 text-white flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight uppercase mb-2">
+                    <i class="fas fa-hard-hat text-yellow-500 mr-3"></i>BABUL CONSTRUCTION
+                </h1>
+                <div class="flex items-center space-x-2">
+                    <div id="connectionStatus" class="h-2 w-2 rounded-full bg-red-500"></div>
+                    <p class="text-yellow-400 text-sm md:text-lg font-medium tracking-wide">Live Database System</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 pb-12">
+        
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0"><i class="fas fa-filter mr-2 text-blue-600"></i>Select View:</h2>
+            <div class="flex space-x-3 overflow-x-auto pb-2 w-full md:w-auto" id="tabContainer">
+                <button onclick="filterData('All')" id="btn-All" class="tab-active px-6 py-2.5 rounded-full font-bold shadow-lg border border-gray-300 flex-shrink-0">All Sites</button>
+                <button onclick="filterData('Uttara')" id="btn-Uttara" class="tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 flex-shrink-0">কসাইটুলি</button>
+                <button onclick="filterData('Mirpur')" id="btn-Mirpur" class="tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 flex-shrink-0">মাহিগঞ্জ ইস্পাহানি</button>
+                <button onclick="filterData('Office')" id="btn-Office" class="tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 flex-shrink-0">কিশোরগঞ্জ ইস্পাহানি</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-blue-600 relative overflow-hidden group">
+                <div class="relative z-10">
+                    <p class="text-gray-500 text-sm font-bold uppercase tracking-wide" id="cardTitle">Total Expenses</p>
+                    <h2 class="text-4xl font-extrabold text-gray-800 mt-2">৳ <span id="totalExpense">0</span></h2>
+                </div>
+            </div>
+            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-yellow-500 relative overflow-hidden">
+                <div class="relative z-10">
+                    <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Material Cost</p>
+                    <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="materialExpense">0</span></h2>
+                </div>
+            </div>
+            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-purple-500 relative overflow-hidden">
+                <div class="relative z-10">
+                    <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Labor & Wages</p>
+                    <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="laborExpense">0</span></h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1">
+                <div class="bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-6 sticky top-6 border border-white/20">
+                    <h3 class="font-bold text-xl text-gray-800 mb-6">Add Expense</h3>
+                    <form id="expenseForm">
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Site</label>
+                            <select id="siteInput" class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none font-bold text-gray-700">
+                                <option value="Uttara">🏢 কসাইটুলি</option>
+                                <option value="Mirpur">🏗️ মাহিগঞ্জ ইস্পাহানি</option>
+                                <option value="Office">🏗️ কিশোরগঞ্জ ইস্পাহানি</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Description</label>
+                            <input type="text" id="descInput" placeholder="Ex: 2000 Bricks" required class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Category</label>
+                            <select id="catInput" class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none">
+                                <option value="Material">🧱 মালামাল</option>
+                                <option value="Labor">👷 লেবার</option>
+                                <option value="Transport">🚚 যাতায়াত</option>
+                                <option value="Misc">☕ অন্যান্য </option>
+                            </select>
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Amount (Tk)</label>
+                            <input type="number" id="amountInput" placeholder="0.00" required class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none font-bold text-xl text-gray-800">
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 px-4 rounded-xl shadow-xl transition flex justify-center items-center">
+                            <span>Save Record</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2">
+                <div class="bg-white/95 backdrop-blur rounded-2xl shadow-xl overflow-hidden min-h-[400px]">
+                    <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-gray-800" id="tableTitle">Expense Log</h3>
+                        <button onclick="fetchData()" class="text-blue-600 text-sm font-bold hover:underline"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+                    </div>
+                    
+                    <div id="loadingState" class="hidden p-10 text-center">
+                        <div class="loader mx-auto mb-3"></div>
+                        <p class="text-gray-500">Syncing with Google Sheets...</p>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-500 uppercase bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-4">Date</th>
+                                    <th class="px-6 py-4">Site</th>
+                                    <th class="px-6 py-4">Description</th>
+                                    <th class="px-6 py-4">Category</th>
+                                    <th class="px-6 py-4 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody" class="divide-y divide-gray-100">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let expenses = [];
+        let currentFilter = 'All';
+        const tableBody = document.getElementById('expenseTableBody');
+        const loadingState = document.getElementById('loadingState');
+        const statusDot = document.getElementById('connectionStatus');
+
+        // 1. FETCH DATA FROM GOOGLE SHEET
+        async function fetchData() {
+            if(API_URL === "YOUR_COPIED_URL_HERE") {
+                alert("Please set the API_URL in the code first!");
+                return;
+            }
+
+            loadingState.classList.remove('hidden');
+            tableBody.innerHTML = ''; // Clear current view
+            
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                expenses = data; // Update global data
+                statusDot.className = "h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(0,255,0,0.8)]"; // Green dot
+                renderDashboard();
+            } catch (error) {
+                console.error('Error:', error);
+                statusDot.className = "h-2 w-2 rounded-full bg-red-500"; // Red dot
+                alert("Failed to load data. Check internet or URL.");
+            } finally {
+                loadingState.classList.add('hidden');
+            }
+        }
+
+        // 2. RENDER UI
+        function renderDashboard() {
+            let totalSum = 0, matSum = 0, laborSum = 0;
+            tableBody.innerHTML = '';
+
+            const filteredData = expenses.filter(item => currentFilter === 'All' || item.site === currentFilter);
+
+            filteredData.forEach(item => {
+                // Calculations
+                totalSum += parseFloat(item.amount);
+                if(item.category === 'Material') matSum += parseFloat(item.amount);
+                if(item.category === 'Labor') laborSum += parseFloat(item.amount);
+
+                // Styling
+                let badgeClass = "bg-gray-100 text-gray-800";
+                if(item.category === 'Material') badgeClass = "bg-yellow-100 text-yellow-800";
+                if(item.category === 'Labor') badgeClass = "bg-purple-100 text-purple-800";
+                if(item.category === 'Transport') badgeClass = "bg-blue-100 text-blue-800";
+
+                const row = `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-xs text-gray-500">${item.date}<br>${item.time}</td>
+                        <td class="px-6 py-4"><span class="font-bold text-xs bg-gray-800 text-white px-2 py-1 rounded">${item.site}</span></td>
+                        <td class="px-6 py-4 font-medium text-gray-800">${item.desc}</td>
+                        <td class="px-6 py-4"><span class="${badgeClass} px-2 py-1 rounded text-xs font-bold">${item.category}</span></td>
+                        <td class="px-6 py-4 text-right font-bold">৳ ${item.amount.toLocaleString('en-BD')}</td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+
+            // Update Cards
+            document.getElementById('totalExpense').innerText = totalSum.toLocaleString('en-BD');
+            document.getElementById('materialExpense').innerText = matSum.toLocaleString('en-BD');
+            document.getElementById('laborExpense').innerText = laborSum.toLocaleString('en-BD');
+            document.getElementById('cardTitle').innerText = `Total Expenses (${currentFilter})`;
+        }
+
+        // 3. SUBMIT NEW DATA
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const originalText = btn.innerHTML;
+
+            // Get Values
+            const formData = {
+                site: document.getElementById('siteInput').value,
+                desc: document.getElementById('descInput').value,
+                category: document.getElementById('catInput').value,
+                amount: document.getElementById('amountInput').value
+            };
+
+            // UI Loading State
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loader border-white border-t-transparent w-5 h-5"></div>';
+
+            try {
+                // Send to Google Sheet
+                await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify(formData)
+                });
+
+                // Success
+                this.reset();
+                fetchData(); // Reload data to see new entry
+                alert("Saved successfully!");
+            } catch (error) {
+                alert("Error saving data!");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        // 4. FILTER FUNCTION
+        function filterData(site) {
+            currentFilter = site;
+            // Update Button Styles
+            ['All', 'Uttara', 'Mirpur', 'Office'].forEach(btn => {
+                const el = document.getElementById(`btn-${btn}`);
+                el.className = (btn === site) 
+                    ? "tab-active px-6 py-2.5 rounded-full font-bold shadow-lg border border-gray-900" 
+                    : "tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 hover:bg-white cursor-pointer";
+            });
+            renderDashboard();
+        }
+
+        // Initial Load
+        fetchData();
+    </script>
+</body>
+</html>
