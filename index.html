@@ -1,325 +1,546 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Babul Construction Manager</title>
+    <title>Babul Construction</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .tab-active { background-color: #1f2937; color: white; transform: scale(1.05); }
-        .tab-inactive { background-color: rgba(255, 255, 255, 0.8); color: #374151; }
-        .loader { border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #3498db; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        
+        /* Custom Scrollbar for Webkit */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Hide scrollbar for horizontal tabs but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Interactive Elements */
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        
+        .tab-active { background-color: #111827; color: white; transform: scale(1.05); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .tab-inactive { background-color: white; color: #374151; border: 1px solid #e5e7eb; }
+        .tab-inactive:hover { background-color: #f3f4f6; }
+
+        /* Loading & Animations */
+        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3b82f6; width: 20px; height: 20px; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Modal Animation */
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.9); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        .modal-animate { animation: popIn 0.3s ease-out forwards; }
-        .shake { animation: shake 0.5s; }
-        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+        .modal-animate { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+        
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        
+        /* Smooth Fade In for content */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="text-gray-800 min-h-screen relative">
+<body class="text-gray-800 min-h-screen relative bg-gray-50 antialiased selection:bg-yellow-200 selection:text-yellow-900">
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbx7ceE3bILkhynoXbjOCAagq-I0erm_4x7BMt-LQ817N8VLnldNDsCVuaB_qlbuw-JH6Q/exec";
-        const ADMIN_PASSWORD = "12345"; // আপনার পাসওয়ার্ড
+        const SHEET_URL = "https://docs.google.com/spreadsheets"; 
+        const ADMIN_PASSWORD = "12345"; 
     </script>
 
     <div class="fixed inset-0 z-[-1]">
-        <img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1920&auto=format&fit=crop" class="w-full h-full object-cover opacity-20">
-        <div class="absolute inset-0 bg-gray-100/40 backdrop-blur-[2px]"></div>
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200"></div>
     </div>
 
-    <header class="relative h-64 w-full overflow-hidden shadow-lg mb-8">
-        <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1920&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover">
-        <div class="absolute inset-0 bg-gradient-to-t from-black/90 to-black/40"></div>
-        <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 text-white flex justify-between items-end">
-            <div>
-                <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight uppercase mb-2">
-                    <i class="fas fa-hard-hat text-yellow-500 mr-3"></i>BABUL CONSTRUCTION
-                </h1>
-                <div class="flex items-center space-x-2">
-                    <div id="connectionStatus" class="h-2 w-2 rounded-full bg-red-500"></div>
-                    <p class="text-yellow-400 text-sm md:text-lg font-medium tracking-wide">Live Database System</p>
+    <header class="bg-gray-900/95 backdrop-blur-md text-white shadow-lg sticky top-0 z-40 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center">
+                    <div class="bg-yellow-500 p-2.5 rounded-xl text-gray-900 mr-3 shadow-lg shadow-yellow-500/20">
+                        <i class="fas fa-hard-hat text-xl sm:text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-2xl font-extrabold tracking-tight uppercase leading-none">Babul Construction.</h1>
+                        <div class="flex items-center space-x-2 text-[10px] sm:text-xs text-gray-400 mt-1">
+                            <div id="connectionStatus" class="h-4 w-4 rounded-full bg-red-500 animate-pulse"></div>
+                            <p>Live System</p>
+                        </div>
+                    </div>
                 </div>
+                <button onclick="window.open(SHEET_URL, '_blank')" class="sm:hidden bg-gray-800 p-2 rounded-lg text-green-400 border border-gray-700">
+                    <i class="fas fa-database"></i>
+                </button>
             </div>
+            
+            <button onclick="window.open(SHEET_URL, '_blank')" class="hidden sm:flex bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold border border-gray-700 transition-all hover:shadow-lg hover:border-gray-600 items-center group">
+                <i class="fas fa-database mr-2 text-green-400 group-hover:rotate-12 transition-transform"></i> Open Database
+            </button>
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 pb-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 fade-in">
         
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0"><i class="fas fa-filter mr-2 text-blue-600"></i>Select View:</h2>
-            <div class="flex space-x-3 overflow-x-auto pb-2 w-full md:w-auto" id="tabContainer">
-                <button onclick="filterData('All')" id="btn-All" class="tab-active px-6 py-2.5 rounded-full font-bold shadow-lg border border-gray-300 flex-shrink-0">All Sites</button>
-                <button onclick="filterData('কসাইটুলি')" id="btn-কসাইটুলি" class="tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 flex-shrink-0">কসাইটুলি</button>
-                <button onclick="filterData('মাহিগঞ্জ ইস্পাহানি')" id="btn-মাহিগঞ্জ ইস্পাহানি" class="tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 flex-shrink-0">মাহিগঞ্জ ইস্পাহানি</button>
-                <button onclick="filterData('কিশোরগঞ্জ ইস্পাহানি')" id="btn-কিশোরগঞ্জ ইস্পাহানি" class="tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 flex-shrink-0">কিশোরগঞ্জ ইস্পাহানি</button>
+        <div class="bg-white rounded-2xl shadow-sm p-4 mb-8 border border-gray-200 flex flex-col xl:flex-row justify-between items-center gap-4 sticky top-[75px] z-30 sm:static">
+            <div class="flex space-x-3 overflow-x-auto w-full xl:w-auto pb-2 xl:pb-0 no-scrollbar snap-x" id="tabContainer">
+                <button onclick="filterData('All')" id="btn-All" class="snap-start shrink-0 tab-active px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all duration-300">All Sites</button>
+                <button onclick="filterData('কসাইটুলি')" id="btn-কসাইটুলি" class="snap-start shrink-0 tab-inactive px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm transition-all duration-300">কসাইটুলি</button>
+                <button onclick="filterData('মাহিগঞ্জ ইস্পাহানি')" id="btn-মাহিগঞ্জ ইস্পাহানি" class="snap-start shrink-0 tab-inactive px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm transition-all duration-300">মাহিগঞ্জ ইস্পাহানি</button>
+                <button onclick="filterData('কিশোরগঞ্জ ইস্পাহানি')" id="btn-কিশোরগঞ্জ ইস্পাহানি" class="snap-start shrink-0 tab-inactive px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm transition-all duration-300">কিশোরগঞ্জ ইস্পাহানি</button>
             </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-blue-600 relative overflow-hidden">
-                <p class="text-gray-500 text-sm font-bold uppercase tracking-wide" id="cardTitle">Total Expenses</p>
-                <h2 class="text-4xl font-extrabold text-gray-800 mt-2">৳ <span id="totalExpense">0</span></h2>
-            </div>
-            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-yellow-500 relative overflow-hidden">
-                <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Material Cost</p>
-                <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="materialExpense">0</span></h2>
-            </div>
-            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-purple-500 relative overflow-hidden">
-                <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Labor & Wages</p>
-                <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="laborExpense">0</span></h2>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <div class="lg:col-span-1">
-                <div class="bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-6 sticky top-6 border border-white/20">
-                    <h3 class="font-bold text-xl text-gray-800 mb-6 flex items-center justify-between">
-                        Add Expense 
-                        <i class="fas fa-lock text-gray-400 text-sm" title="Secure Entry"></i>
+            <div class="flex items-center w-full xl:w-auto bg-gray-100 rounded-xl p-1.5 self-start xl:self-auto">
+                <button onclick="setDateFilter('All')" id="date-All" class="flex-1 xl:flex-none px-4 py-2 rounded-lg text-xs font-bold bg-white shadow-sm text-gray-900 transition-all">All Time</button>
+                <button onclick="setDateFilter('Month')" id="date-Month" class="flex-1 xl:flex-none px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-white hover:shadow-sm transition-all">This Month</button>
+                <button onclick="setDateFilter('Today')" id="date-Today" class="flex-1 xl:flex-none px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-white hover:shadow-sm transition-all">Today</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mb-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 shadow-xl text-white relative overflow-hidden card-hover group">
+                        <div class="absolute top-0 right-0 bg-white/5 w-24 h-24 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                        <p class="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Expenses</p>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold mt-2 tracking-tight">৳ <span id="totalExpense">0</span></h2>
+                        <i class="fas fa-wallet absolute bottom-4 right-4 text-4xl text-white/10 group-hover:text-white/20 transition-colors"></i>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover group relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-500"></div>
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider">Material Cost</p>
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mt-2">৳ <span id="materialExpense">0</span></h2>
+                        <i class="fas fa-cubes absolute bottom-4 right-4 text-3xl text-yellow-100 group-hover:text-yellow-200 transition-colors"></i>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover group relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-purple-600"></div>
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider">Labor & Wages</p>
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mt-2">৳ <span id="laborExpense">0</span></h2>
+                        <i class="fas fa-users absolute bottom-4 right-4 text-3xl text-purple-100 group-hover:text-purple-200 transition-colors"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200 card-hover">
+                    <h3 class="font-bold text-gray-800 mb-6 flex items-center text-lg">
+                        <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3"><i class="fas fa-chart-pie"></i></span> 
+                        Expense Breakdown
                     </h3>
-                    <form id="expenseForm">
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Site</label>
-                            <select id="siteInput" class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none font-bold text-gray-700">
-                                <option value="কসাইটুলি">🏢 কসাইটুলি</option>
-                                <option value="মাহিগঞ্জ ইস্পাহানি">🏗️ মাহিগঞ্জ ইস্পাহানি</option>
-                                <option value="কিশোরগঞ্জ ইস্পাহানি">🏗️ কিশোরগঞ্জ ইস্পাহানি</option>
-                            </select>
+                    <div class="h-64 w-full flex justify-center relative">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 lg:sticky lg:top-28 transition-all duration-300 hover:shadow-xl">
+                    <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+                        <h3 class="font-bold text-xl text-gray-900">New Entry</h3>
+                        <div class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-gray-500 flex items-center">
+                            <i class="fas fa-lock mr-1.5"></i> Secure
                         </div>
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Description</label>
-                            <input type="text" id="descInput" placeholder="Ex: 2000 Bricks" required class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none">
+                    </div>
+                    <form id="expenseForm" class="space-y-5">
+                        <div class="group">
+                            <label class="block text-[10px] font-extrabold text-gray-400 uppercase mb-1.5 tracking-widest group-focus-within:text-blue-600 transition-colors">Select Site</label>
+                            <div class="relative">
+                                <i class="fas fa-building absolute left-4 top-3.5 text-gray-400"></i>
+                                <select id="siteInput" class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-sm transition-all cursor-pointer appearance-none">
+                                    <option value="কসাইটুলি">🏢 কসাইটুলি</option>
+                                    <option value="মাহিগঞ্জ ইস্পাহানি">🏗️ মাহিগঞ্জ ইস্পাহানি</option>
+                                    <option value="কিশোরগঞ্জ ইস্পাহানি">🏗️ কিশোরগঞ্জ ইস্পাহানি</option>
+                                </select>
+                                <i class="fas fa-chevron-down absolute right-4 top-4 text-xs text-gray-400 pointer-events-none"></i>
+                            </div>
                         </div>
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Category</label>
-                            <select id="catInput" class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none">
-                                <option value="Material">🧱 মালামাল</option>
-                                <option value="Labor">👷 লেবার</option>
-                                <option value="Transport">🚚 যাতায়াত</option>
-                                <option value="Misc">☕ অন্যান্য</option>
-                            </select>
-                        </div>
-                        <div class="mb-6">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Amount (Tk)</label>
-                            <input type="number" id="amountInput" placeholder="0.00" required class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none font-bold text-xl text-gray-800">
+                        
+                        <div class="group">
+                            <label class="block text-[10px] font-extrabold text-gray-400 uppercase mb-1.5 tracking-widest group-focus-within:text-blue-600 transition-colors">Description</label>
+                            <input type="text" id="descInput" placeholder="What was the expense for?" required class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-sm transition-all placeholder-gray-300">
                         </div>
 
-                        <button type="submit" id="submitBtn" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 px-4 rounded-xl shadow-xl transition flex justify-center items-center">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="group">
+                                <label class="block text-[10px] font-extrabold text-gray-400 uppercase mb-1.5 tracking-widest group-focus-within:text-blue-600 transition-colors">Category</label>
+                                <div class="relative">
+                                    <select id="catInput" class="w-full px-3 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-sm transition-all appearance-none font-medium">
+                                        <option value="Material">🧱 Material</option>
+                                        <option value="Labor">👷 Labor</option>
+                                        <option value="Transport">🚚 Transport</option>
+                                        <option value="Misc">☕ Misc</option>
+                                    </select>
+                                    <i class="fas fa-chevron-down absolute right-3 top-4 text-xs text-gray-400 pointer-events-none"></i>
+                                </div>
+                            </div>
+                            <div class="group">
+                                <label class="block text-[10px] font-extrabold text-gray-400 uppercase mb-1.5 tracking-widest group-focus-within:text-blue-600 transition-colors">Amount (৳)</label>
+                                <input type="number" id="amountInput" placeholder="0" required class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none font-bold text-gray-900 text-sm transition-all">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="w-full mt-2 bg-gray-900 hover:bg-black text-white font-bold py-4 rounded-xl shadow-lg shadow-gray-900/20 transition-all active:scale-95 flex justify-center items-center group relative overflow-hidden">
+                            <div class="absolute inset-0 w-full h-full bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
                             <span>Save Record</span>
+                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                         </button>
                     </form>
                 </div>
             </div>
+        </div>
 
-            <div class="lg:col-span-2">
-                <div class="bg-white/95 backdrop-blur rounded-2xl shadow-xl overflow-hidden min-h-[400px]">
-                    <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
-                        <h3 class="font-bold text-lg text-gray-800" id="tableTitle">Expense Log</h3>
-                        <button onclick="fetchData()" class="text-blue-600 text-sm font-bold hover:underline"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
+            <div class="p-5 border-b border-gray-100 bg-gray-50/80 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h3 class="font-bold text-lg text-gray-800 flex items-center">
+                    <i class="fas fa-list-alt mr-2 text-gray-400"></i> Expense Log
+                </h3>
+                
+                <div class="flex flex-col sm:flex-row w-full md:w-auto gap-3">
+                    <div class="relative w-full sm:w-64">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Search expenses..." class="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all">
                     </div>
-                    
-                    <div id="loadingState" class="hidden p-10 text-center">
-                        <div class="loader mx-auto mb-3"></div>
-                        <p class="text-gray-500">Syncing with Google Sheets...</p>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <thead class="text-xs text-gray-500 uppercase bg-gray-100 sticky top-0">
-                                <tr>
-                                    <th class="px-6 py-4">Date</th>
-                                    <th class="px-6 py-4">Site</th>
-                                    <th class="px-6 py-4">Description</th>
-                                    <th class="px-6 py-4">Category</th>
-                                    <th class="px-6 py-4 text-right">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody id="expenseTableBody" class="divide-y divide-gray-100"></tbody>
-                        </table>
+                    <div class="flex gap-2">
+                        <button onclick="exportToCSV()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md shadow-green-600/20 transition-all hover:-translate-y-0.5 flex items-center justify-center">
+                            <i class="fas fa-file-excel mr-2"></i> Export
+                        </button>
+                        <button onclick="fetchData()" class="bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 px-3 py-2 rounded-lg text-xs font-bold shadow-sm transition-all hover:rotate-180 active:scale-90">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <div id="loadingState" class="hidden p-16 text-center">
+                <div class="loader mx-auto mb-4"></div>
+                <p class="text-gray-400 text-sm font-medium animate-pulse">Syncing with secure database...</p>
+            </div>
+
+            <div class="overflow-x-auto max-h-[500px] custom-scrollbar">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-500 uppercase bg-gray-100/80 backdrop-blur sticky top-0 z-10 font-bold tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 rounded-tl-lg">Date</th>
+                            <th class="px-6 py-4">Site</th>
+                            <th class="px-6 py-4 w-1/3">Description</th>
+                            <th class="px-6 py-4">Category</th>
+                            <th class="px-6 py-4 text-right rounded-tr-lg">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseTableBody" class="divide-y divide-gray-100">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="text-center text-gray-400 text-[10px] font-medium uppercase tracking-widest pb-4">
+            Babul Construction System © 2025
         </div>
     </div>
 
-    <div id="loginModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 relative modal-animate border border-gray-100">
-            <div class="flex justify-center -mt-14 mb-4">
-                <div class="h-20 w-20 bg-gradient-to-br from-gray-800 to-black rounded-full flex items-center justify-center shadow-lg border-4 border-white">
-                    <i class="fas fa-shield-alt text-3xl text-yellow-400"></i>
+    <div id="loginModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm transition-opacity duration-300 px-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xs sm:max-w-sm p-8 relative modal-animate border border-gray-100">
+            <div class="text-center mb-8">
+                <div class="h-20 w-20 bg-gray-900 rounded-2xl rotate-3 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-gray-900/30">
+                    <i class="fas fa-fingerprint text-3xl text-yellow-400 -rotate-3"></i>
                 </div>
+                <h2 class="text-2xl font-black text-gray-800 tracking-tight">Admin Verify</h2>
+                <p class="text-gray-400 text-xs mt-2 font-medium">Security clearance required to save.</p>
             </div>
-            
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-extrabold text-gray-800">Admin Access</h2>
-                <p class="text-gray-400 text-sm mt-1">Please enter password to save data</p>
-            </div>
-
             <form id="loginForm">
-                <div class="mb-5 relative">
-                    <i class="fas fa-key absolute left-4 top-3.5 text-gray-400"></i>
-                    <input type="password" id="modalPassword" placeholder="Enter Password" 
-                        class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-gray-800 focus:ring-2 focus:ring-gray-200 outline-none font-bold transition-all text-center tracking-widest text-lg">
+                <div class="relative mb-6">
+                    <input type="password" id="modalPassword" placeholder="••••••" class="w-full text-center py-4 rounded-2xl bg-gray-50 border-2 border-gray-100 focus:border-gray-900 focus:bg-white outline-none font-bold text-2xl tracking-[0.5em] transition-all">
+                    <p id="loginError" class="hidden absolute -bottom-6 left-0 right-0 text-red-500 text-[10px] font-bold text-center uppercase tracking-wide">Incorrect Password</p>
                 </div>
-                
-                <p id="loginError" class="hidden text-red-500 text-xs font-bold text-center mb-4"><i class="fas fa-exclamation-circle mr-1"></i> Incorrect Password!</p>
-
                 <div class="flex space-x-3">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition">Cancel</button>
-                    <button type="submit" class="flex-1 py-3 rounded-xl font-bold bg-gray-900 text-white shadow-lg hover:bg-black transform active:scale-95 transition">Verify</button>
+                    <button type="button" onclick="document.getElementById('loginModal').classList.add('hidden')" class="flex-1 py-3.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors text-sm">Cancel</button>
+                    <button type="submit" class="flex-1 py-3.5 rounded-xl font-bold bg-gray-900 text-white shadow-lg shadow-gray-900/20 hover:bg-black hover:scale-[1.02] transition-all text-sm">Verify Access</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script>
-        let expenses = [];
-        let currentFilter = 'All';
-        let isLoggedIn = false; // AUTH STATE
+    <div id="successModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300 px-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xs p-8 relative modal-animate text-center border border-green-100">
+            <div class="mx-auto h-20 w-20 bg-green-50 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <h2 class="text-2xl font-black text-gray-800 mb-1">Success!</h2>
+            <p class="text-gray-400 text-xs mb-6">Record has been safely stored.</p>
+            <button onclick="document.getElementById('successModal').classList.add('hidden')" class="w-full py-3 rounded-xl font-bold bg-gray-900 text-white shadow-lg hover:bg-black transition-all">Continue</button>
+        </div>
+    </div>
 
+    <script>
+        let allExpenses = [];
+        let currentSiteFilter = 'All';
+        let currentDateFilter = 'All';
+        let isLoggedIn = false;
+        let myChart = null;
+
+        // Elements
         const tableBody = document.getElementById('expenseTableBody');
-        const loadingState = document.getElementById('loadingState');
         const statusDot = document.getElementById('connectionStatus');
-        const modal = document.getElementById('loginModal');
-        const loginError = document.getElementById('loginError');
-        const modalPassInput = document.getElementById('modalPassword');
+        const searchInput = document.getElementById('searchInput');
 
         // 1. FETCH DATA
         async function fetchData() {
-            loadingState.classList.remove('hidden');
-            tableBody.innerHTML = ''; 
+            document.getElementById('loadingState').classList.remove('hidden');
+            tableBody.innerHTML = '';
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json();
-                expenses = data; 
-                statusDot.className = "h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(0,255,0,0.8)]"; 
-                renderDashboard();
+                allExpenses = data;
+                statusDot.className = "h-4 w-4 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]";
+                processData(); // Filter & Render
             } catch (error) {
                 console.error(error);
-                statusDot.className = "h-2 w-2 rounded-full bg-red-500"; 
+                statusDot.className = "h-2 w-2 rounded-full bg-red-500";
             } finally {
-                loadingState.classList.add('hidden');
+                document.getElementById('loadingState').classList.add('hidden');
             }
         }
 
-        // 2. RENDER DATA
-        function renderDashboard() {
-            let totalSum = 0, matSum = 0, laborSum = 0;
-            tableBody.innerHTML = '';
-            const filteredData = expenses.filter(item => currentFilter === 'All' || item.site === currentFilter);
-
-            if(filteredData.length === 0) tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">No records found.</td></tr>';
-
-            filteredData.forEach(item => {
-                let amount = parseFloat(item.amount);
-                totalSum += amount;
-                if(item.category === 'Material') matSum += amount;
-                if(item.category === 'Labor') laborSum += amount;
+        // 2. PROCESS & RENDER (Filters + Chart)
+        function processData() {
+            const searchText = searchInput.value.toLowerCase();
+            const now = new Date();
+            
+            // Filter Logic
+            let filtered = allExpenses.filter(item => {
+                // Site Filter
+                if (currentSiteFilter !== 'All' && item.site !== currentSiteFilter) return false;
                 
-                let badgeClass = "bg-gray-100";
-                if(item.category === 'Material') badgeClass = "bg-yellow-100 text-yellow-800";
-                if(item.category === 'Labor') badgeClass = "bg-purple-100 text-purple-800";
-                if(item.category === 'Transport') badgeClass = "bg-blue-100 text-blue-800";
+                // Search Filter
+                if (searchText && !item.desc.toLowerCase().includes(searchText)) return false;
+
+                // Date Filter
+                if (currentDateFilter !== 'All') {
+                    const parts = item.date.split('/');
+                    const itemDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // YYYY-MM-DD
+                    
+                    if (currentDateFilter === 'Today') {
+                        if (itemDate.toDateString() !== now.toDateString()) return false;
+                    }
+                    if (currentDateFilter === 'Month') {
+                        if (itemDate.getMonth() !== now.getMonth() || itemDate.getFullYear() !== now.getFullYear()) return false;
+                    }
+                }
+                return true;
+            });
+
+            renderTable(filtered);
+            renderChart(filtered);
+        }
+
+        // 3. RENDER TABLE & SUMS
+        function renderTable(data) {
+            let total = 0, mat = 0, lab = 0;
+            tableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-12 text-gray-400 flex flex-col items-center"><i class="fas fa-inbox text-3xl mb-2 opacity-50"></i><span>No records found for this selection.</span></td></tr>';
+            }
+
+            data.forEach(item => {
+                let amt = parseFloat(item.amount);
+                total += amt;
+                if (item.category === 'Material') mat += amt;
+                if (item.category === 'Labor') lab += amt;
+
+                let badgeClass = "bg-gray-100 text-gray-600";
+                let icon = "";
+                if (item.category === 'Material') { badgeClass = "bg-yellow-100 text-yellow-800 border border-yellow-200"; icon="🧱"; }
+                if (item.category === 'Labor') { badgeClass = "bg-purple-100 text-purple-800 border border-purple-200"; icon="👷"; }
+                if (item.category === 'Transport') { badgeClass = "bg-blue-100 text-blue-800 border border-blue-200"; icon="🚚"; }
+                if (item.category === 'Misc') { badgeClass = "bg-green-100 text-green-800 border border-green-200"; icon="☕"; }
 
                 const row = `
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-xs text-gray-500">${item.date}<br>${item.time}</td>
-                        <td class="px-6 py-4"><span class="font-bold text-xs bg-gray-800 text-white px-2 py-1 rounded">${item.site}</span></td>
-                        <td class="px-6 py-4 font-medium text-gray-800">${item.desc}</td>
-                        <td class="px-6 py-4"><span class="${badgeClass} px-2 py-1 rounded text-xs font-bold">${item.category}</span></td>
-                        <td class="px-6 py-4 text-right font-bold">৳ ${amount.toLocaleString('en-BD')}</td>
+                    <tr class="hover:bg-gray-50 transition-colors group border-b border-gray-50 last:border-none">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-gray-700 text-xs">${item.date}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">${item.time}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-bold text-[10px] bg-gray-800 text-white px-2.5 py-1 rounded-md shadow-sm whitespace-nowrap">${item.site}</span>
+                        </td>
+                        <td class="px-6 py-4 font-medium text-gray-700 text-xs leading-relaxed">${item.desc}</td>
+                        <td class="px-6 py-4">
+                            <span class="${badgeClass} px-2.5 py-1 rounded-md text-[10px] uppercase font-extrabold tracking-wide shadow-sm whitespace-nowrap flex w-fit items-center gap-1">
+                                <span>${icon}</span> ${item.category}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="font-bold text-gray-900 text-sm">৳ ${amt.toLocaleString('en-BD')}</span>
+                        </td>
                     </tr>`;
                 tableBody.insertAdjacentHTML('beforeend', row);
             });
-            document.getElementById('totalExpense').innerText = totalSum.toLocaleString('en-BD');
-            document.getElementById('materialExpense').innerText = matSum.toLocaleString('en-BD');
-            document.getElementById('laborExpense').innerText = laborSum.toLocaleString('en-BD');
-            document.getElementById('cardTitle').innerText = `Total Expenses (${currentFilter})`;
+
+            // Update Cards with Animation
+            animateValue("totalExpense", parseFloat(document.getElementById('totalExpense').innerText.replace(/,/g, '') || 0), total, 1000);
+            animateValue("materialExpense", parseFloat(document.getElementById('materialExpense').innerText.replace(/,/g, '') || 0), mat, 1000);
+            animateValue("laborExpense", parseFloat(document.getElementById('laborExpense').innerText.replace(/,/g, '') || 0), lab, 1000);
         }
 
-        // 3. HANDLE FORM SUBMIT (TRIGGER MODAL)
+        // Helper: Number counter animation
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString('en-BD');
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.innerHTML = end.toLocaleString('en-BD');
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // 4. RENDER CHART (Chart.js)
+        function renderChart(data) {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            
+            // Aggregate Data
+            let cats = { 'Material': 0, 'Labor': 0, 'Transport': 0, 'Misc': 0 };
+            data.forEach(item => {
+                if (cats[item.category] !== undefined) cats[item.category] += parseFloat(item.amount);
+            });
+
+            const chartData = {
+                labels: Object.keys(cats),
+                datasets: [{
+                    data: Object.values(cats),
+                    backgroundColor: ['#F59E0B', '#9333EA', '#2563EB', '#10B981'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 15
+                }]
+            };
+
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { animateScale: true, animateRotate: true },
+                    plugins: {
+                        legend: { position: 'right', labels: { font: { family: 'Inter', size: 11 }, usePointStyle: true, padding: 20 } }
+                    },
+                    cutout: '75%',
+                    layout: { padding: 10 }
+                }
+            });
+        }
+
+        // 5. EXPORT TO CSV
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Date,Time,Site,Description,Category,Amount\n";
+            allExpenses.forEach(row => {
+                let rowData = `${row.date},${row.time},${row.site},"${row.desc}",${row.category},${row.amount}`;
+                csvContent += rowData + "\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Babul_Construction_Report_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        // 6. EVENT HANDLERS
+        function filterData(site) {
+            currentSiteFilter = site;
+            ['All', 'কসাইটুলি', 'মাহিগঞ্জ ইস্পাহানি', 'কিশোরগঞ্জ ইস্পাহানি'].forEach(btn => {
+                const el = document.getElementById(`btn-${btn}`);
+                if(el) el.className = (btn === site) ? "snap-start shrink-0 tab-active px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all duration-300" : "snap-start shrink-0 tab-inactive px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm transition-all duration-300 text-gray-500 hover:text-gray-900";
+            });
+            processData();
+        }
+
+        function setDateFilter(period) {
+            currentDateFilter = period;
+            ['All', 'Month', 'Today'].forEach(p => {
+                const el = document.getElementById(`date-${p}`);
+                el.className = (p === period) ? "flex-1 xl:flex-none px-4 py-2 rounded-lg text-xs font-bold bg-white shadow-md text-blue-600 transition-all transform scale-105" : "flex-1 xl:flex-none px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-white hover:shadow-sm transition-all";
+            });
+            processData();
+        }
+
+        function handleSearch() {
+            processData();
+        }
+
+        // Save & Login Logic
+        const loginModal = document.getElementById('loginModal');
+        const successModal = document.getElementById('successModal');
+        const modalPass = document.getElementById('modalPassword');
+        const loginErr = document.getElementById('loginError');
+
         document.getElementById('expenseForm').addEventListener('submit', function(e) {
             e.preventDefault();
             if (!isLoggedIn) {
-                // Show Modal
-                modal.classList.remove('hidden');
-                modalPassInput.value = '';
-                modalPassInput.focus();
-                loginError.classList.add('hidden');
-            } else {
-                saveToGoogleSheet(); // Already logged in, save directly
-            }
+                loginModal.classList.remove('hidden');
+                modalPass.value = '';
+                setTimeout(() => modalPass.focus(), 100);
+                loginErr.classList.add('hidden');
+            } else saveToGoogleSheet();
         });
 
-        // 4. HANDLE LOGIN MODAL
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const enteredPass = modalPassInput.value;
-            const modalBox = modal.querySelector('div');
-
-            if (enteredPass === ADMIN_PASSWORD) {
+            if (modalPass.value === ADMIN_PASSWORD) {
                 isLoggedIn = true;
-                modal.classList.add('hidden');
-                saveToGoogleSheet(); // Save data after login
+                loginModal.classList.add('hidden');
+                saveToGoogleSheet();
             } else {
-                // Wrong Password Animation
-                loginError.classList.remove('hidden');
-                modalBox.classList.add('shake');
-                setTimeout(() => modalBox.classList.remove('shake'), 500);
-                modalPassInput.value = '';
+                loginErr.classList.remove('hidden');
+                const modalContent = loginModal.querySelector('div');
+                modalContent.classList.remove('modal-animate');
+                void modalContent.offsetWidth; // trigger reflow
+                modalContent.classList.add('shake');
+                setTimeout(() => modalContent.classList.remove('shake'), 500);
+                modalPass.value = '';
             }
         });
 
-        function closeModal() {
-            modal.classList.add('hidden');
-        }
-
-        // 5. MAIN SAVE FUNCTION
         async function saveToGoogleSheet() {
             const btn = document.getElementById('submitBtn');
-            const originalText = btn.innerHTML;
-            const formData = {
-                site: document.getElementById('siteInput').value,
-                desc: document.getElementById('descInput').value,
-                category: document.getElementById('catInput').value,
-                amount: document.getElementById('amountInput').value
-            };
-
+            const oldHTML = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<div class="loader border-white border-t-transparent w-5 h-5"></div>';
-
+            
             try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify(formData) });
+                await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        site: document.getElementById('siteInput').value,
+                        desc: document.getElementById('descInput').value,
+                        category: document.getElementById('catInput').value,
+                        amount: document.getElementById('amountInput').value
+                    })
+                });
                 document.getElementById('expenseForm').reset();
-                fetchData(); 
-                alert("Saved successfully!");
-            } catch (error) {
-                alert("Error saving data!");
-            } finally {
+                fetchData();
+                successModal.classList.remove('hidden');
+            } catch (e) { 
+                alert("Connection Error! Check Internet."); 
+            }
+            finally {
                 btn.disabled = false;
-                btn.innerHTML = originalText;
+                btn.innerHTML = oldHTML;
             }
         }
 
-        function filterData(site) {
-            currentFilter = site;
-            ['All', 'কসাইটুলি', 'মাহিগঞ্জ ইস্পাহানি', 'কিশোরগঞ্জ ইস্পাহানি'].forEach(btn => {
-                const el = document.getElementById(`btn-${btn}`);
-                if(el) el.className = (btn === site) ? "tab-active px-6 py-2.5 rounded-full font-bold shadow-lg border border-gray-900" : "tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 hover:bg-white cursor-pointer";
-            });
-            renderDashboard();
-        }
-
+        // Start
         fetchData();
     </script>
 </body>
