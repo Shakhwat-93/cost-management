@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Construction Cost Manager</title>
+    <title>Babul Construction Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -11,15 +11,24 @@
         body { font-family: 'Inter', sans-serif; }
         .tab-active { background-color: #1f2937; color: white; transform: scale(1.05); }
         .tab-inactive { background-color: rgba(255, 255, 255, 0.8); color: #374151; }
-        /* Loading Spinner */
         .loader { border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #3498db; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Modal Animation */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .modal-animate { animation: popIn 0.3s ease-out forwards; }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
     </style>
 </head>
 <body class="text-gray-800 min-h-screen relative">
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbx7ceE3bILkhynoXbjOCAagq-I0erm_4x7BMt-LQ817N8VLnldNDsCVuaB_qlbuw-JH6Q/exec"; // <--- এইখানে লিংক বসান
+        const API_URL = "https://script.google.com/macros/s/AKfycbx7ceE3bILkhynoXbjOCAagq-I0erm_4x7BMt-LQ817N8VLnldNDsCVuaB_qlbuw-JH6Q/exec";
+        const ADMIN_PASSWORD = "12345"; // আপনার পাসওয়ার্ড
     </script>
 
     <div class="fixed inset-0 z-[-1]">
@@ -56,23 +65,17 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-blue-600 relative overflow-hidden group">
-                <div class="relative z-10">
-                    <p class="text-gray-500 text-sm font-bold uppercase tracking-wide" id="cardTitle">Total Expenses</p>
-                    <h2 class="text-4xl font-extrabold text-gray-800 mt-2">৳ <span id="totalExpense">0</span></h2>
-                </div>
+            <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-blue-600 relative overflow-hidden">
+                <p class="text-gray-500 text-sm font-bold uppercase tracking-wide" id="cardTitle">Total Expenses</p>
+                <h2 class="text-4xl font-extrabold text-gray-800 mt-2">৳ <span id="totalExpense">0</span></h2>
             </div>
             <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-yellow-500 relative overflow-hidden">
-                <div class="relative z-10">
-                    <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Material Cost</p>
-                    <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="materialExpense">0</span></h2>
-                </div>
+                <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Material Cost</p>
+                <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="materialExpense">0</span></h2>
             </div>
             <div class="bg-white/95 backdrop-blur rounded-2xl p-6 shadow-xl border-l-8 border-purple-500 relative overflow-hidden">
-                <div class="relative z-10">
-                    <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Labor & Wages</p>
-                    <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="laborExpense">0</span></h2>
-                </div>
+                <p class="text-gray-500 text-sm font-bold uppercase tracking-wide">Labor & Wages</p>
+                <h2 class="text-3xl font-bold text-gray-800 mt-2">৳ <span id="laborExpense">0</span></h2>
             </div>
         </div>
 
@@ -80,7 +83,10 @@
             
             <div class="lg:col-span-1">
                 <div class="bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-6 sticky top-6 border border-white/20">
-                    <h3 class="font-bold text-xl text-gray-800 mb-6">Add Expense</h3>
+                    <h3 class="font-bold text-xl text-gray-800 mb-6 flex items-center justify-between">
+                        Add Expense 
+                        <i class="fas fa-lock text-gray-400 text-sm" title="Secure Entry"></i>
+                    </h3>
                     <form id="expenseForm">
                         <div class="mb-4">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Site</label>
@@ -99,8 +105,8 @@
                             <select id="catInput" class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-blue-600 outline-none">
                                 <option value="Material">🧱 মালামাল</option>
                                 <option value="Labor">👷 লেবার</option>
-                                <option value="Transport">🚚 যাতায়াত</option>
-                                <option value="Misc">☕ অন্যান্য </option>
+                                <option value="Transport">🚚 যাতায়াত</option>
+                                <option value="Misc">☕ অন্যান্য</option>
                             </select>
                         </div>
                         <div class="mb-6">
@@ -138,8 +144,7 @@
                                     <th class="px-6 py-4 text-right">Amount</th>
                                 </tr>
                             </thead>
-                            <tbody id="expenseTableBody" class="divide-y divide-gray-100">
-                                </tbody>
+                            <tbody id="expenseTableBody" class="divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                 </div>
@@ -147,54 +152,81 @@
         </div>
     </div>
 
+    <div id="loginModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 relative modal-animate border border-gray-100">
+            <div class="flex justify-center -mt-14 mb-4">
+                <div class="h-20 w-20 bg-gradient-to-br from-gray-800 to-black rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+                    <i class="fas fa-shield-alt text-3xl text-yellow-400"></i>
+                </div>
+            </div>
+            
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-extrabold text-gray-800">Admin Access</h2>
+                <p class="text-gray-400 text-sm mt-1">Please enter password to save data</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="mb-5 relative">
+                    <i class="fas fa-key absolute left-4 top-3.5 text-gray-400"></i>
+                    <input type="password" id="modalPassword" placeholder="Enter Password" 
+                        class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-gray-800 focus:ring-2 focus:ring-gray-200 outline-none font-bold transition-all text-center tracking-widest text-lg">
+                </div>
+                
+                <p id="loginError" class="hidden text-red-500 text-xs font-bold text-center mb-4"><i class="fas fa-exclamation-circle mr-1"></i> Incorrect Password!</p>
+
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl font-bold bg-gray-900 text-white shadow-lg hover:bg-black transform active:scale-95 transition">Verify</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         let expenses = [];
         let currentFilter = 'All';
+        let isLoggedIn = false; // AUTH STATE
+
         const tableBody = document.getElementById('expenseTableBody');
         const loadingState = document.getElementById('loadingState');
         const statusDot = document.getElementById('connectionStatus');
+        const modal = document.getElementById('loginModal');
+        const loginError = document.getElementById('loginError');
+        const modalPassInput = document.getElementById('modalPassword');
 
-        // 1. FETCH DATA FROM GOOGLE SHEET
+        // 1. FETCH DATA
         async function fetchData() {
-            if(API_URL === "YOUR_COPIED_URL_HERE") {
-                alert("Please set the API_URL in the code first!");
-                return;
-            }
-
             loadingState.classList.remove('hidden');
-            tableBody.innerHTML = ''; // Clear current view
-            
+            tableBody.innerHTML = ''; 
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json();
-                
-                expenses = data; // Update global data
-                statusDot.className = "h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(0,255,0,0.8)]"; // Green dot
+                expenses = data; 
+                statusDot.className = "h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(0,255,0,0.8)]"; 
                 renderDashboard();
             } catch (error) {
-                console.error('Error:', error);
-                statusDot.className = "h-2 w-2 rounded-full bg-red-500"; // Red dot
-                alert("Failed to load data. Check internet or URL.");
+                console.error(error);
+                statusDot.className = "h-2 w-2 rounded-full bg-red-500"; 
             } finally {
                 loadingState.classList.add('hidden');
             }
         }
 
-        // 2. RENDER UI
+        // 2. RENDER DATA
         function renderDashboard() {
             let totalSum = 0, matSum = 0, laborSum = 0;
             tableBody.innerHTML = '';
-
             const filteredData = expenses.filter(item => currentFilter === 'All' || item.site === currentFilter);
 
-            filteredData.forEach(item => {
-                // Calculations
-                totalSum += parseFloat(item.amount);
-                if(item.category === 'Material') matSum += parseFloat(item.amount);
-                if(item.category === 'Labor') laborSum += parseFloat(item.amount);
+            if(filteredData.length === 0) tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">No records found.</td></tr>';
 
-                // Styling
-                let badgeClass = "bg-gray-100 text-gray-800";
+            filteredData.forEach(item => {
+                let amount = parseFloat(item.amount);
+                totalSum += amount;
+                if(item.category === 'Material') matSum += amount;
+                if(item.category === 'Labor') laborSum += amount;
+                
+                let badgeClass = "bg-gray-100";
                 if(item.category === 'Material') badgeClass = "bg-yellow-100 text-yellow-800";
                 if(item.category === 'Labor') badgeClass = "bg-purple-100 text-purple-800";
                 if(item.category === 'Transport') badgeClass = "bg-blue-100 text-blue-800";
@@ -205,26 +237,57 @@
                         <td class="px-6 py-4"><span class="font-bold text-xs bg-gray-800 text-white px-2 py-1 rounded">${item.site}</span></td>
                         <td class="px-6 py-4 font-medium text-gray-800">${item.desc}</td>
                         <td class="px-6 py-4"><span class="${badgeClass} px-2 py-1 rounded text-xs font-bold">${item.category}</span></td>
-                        <td class="px-6 py-4 text-right font-bold">৳ ${item.amount.toLocaleString('en-BD')}</td>
-                    </tr>
-                `;
+                        <td class="px-6 py-4 text-right font-bold">৳ ${amount.toLocaleString('en-BD')}</td>
+                    </tr>`;
                 tableBody.insertAdjacentHTML('beforeend', row);
             });
-
-            // Update Cards
             document.getElementById('totalExpense').innerText = totalSum.toLocaleString('en-BD');
             document.getElementById('materialExpense').innerText = matSum.toLocaleString('en-BD');
             document.getElementById('laborExpense').innerText = laborSum.toLocaleString('en-BD');
             document.getElementById('cardTitle').innerText = `Total Expenses (${currentFilter})`;
         }
 
-        // 3. SUBMIT NEW DATA
-        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+        // 3. HANDLE FORM SUBMIT (TRIGGER MODAL)
+        document.getElementById('expenseForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            if (!isLoggedIn) {
+                // Show Modal
+                modal.classList.remove('hidden');
+                modalPassInput.value = '';
+                modalPassInput.focus();
+                loginError.classList.add('hidden');
+            } else {
+                saveToGoogleSheet(); // Already logged in, save directly
+            }
+        });
+
+        // 4. HANDLE LOGIN MODAL
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const enteredPass = modalPassInput.value;
+            const modalBox = modal.querySelector('div');
+
+            if (enteredPass === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                modal.classList.add('hidden');
+                saveToGoogleSheet(); // Save data after login
+            } else {
+                // Wrong Password Animation
+                loginError.classList.remove('hidden');
+                modalBox.classList.add('shake');
+                setTimeout(() => modalBox.classList.remove('shake'), 500);
+                modalPassInput.value = '';
+            }
+        });
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+
+        // 5. MAIN SAVE FUNCTION
+        async function saveToGoogleSheet() {
             const btn = document.getElementById('submitBtn');
             const originalText = btn.innerHTML;
-
-            // Get Values
             const formData = {
                 site: document.getElementById('siteInput').value,
                 desc: document.getElementById('descInput').value,
@@ -232,20 +295,13 @@
                 amount: document.getElementById('amountInput').value
             };
 
-            // UI Loading State
             btn.disabled = true;
             btn.innerHTML = '<div class="loader border-white border-t-transparent w-5 h-5"></div>';
 
             try {
-                // Send to Google Sheet
-                await fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify(formData)
-                });
-
-                // Success
-                this.reset();
-                fetchData(); // Reload data to see new entry
+                await fetch(API_URL, { method: "POST", body: JSON.stringify(formData) });
+                document.getElementById('expenseForm').reset();
+                fetchData(); 
                 alert("Saved successfully!");
             } catch (error) {
                 alert("Error saving data!");
@@ -253,22 +309,17 @@
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
-        });
+        }
 
-        // 4. FILTER FUNCTION
         function filterData(site) {
             currentFilter = site;
-            // Update Button Styles
             ['All', 'কসাইটুলি', 'মাহিগঞ্জ ইস্পাহানি', 'কিশোরগঞ্জ ইস্পাহানি'].forEach(btn => {
                 const el = document.getElementById(`btn-${btn}`);
-                el.className = (btn === site) 
-                    ? "tab-active px-6 py-2.5 rounded-full font-bold shadow-lg border border-gray-900" 
-                    : "tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 hover:bg-white cursor-pointer";
+                if(el) el.className = (btn === site) ? "tab-active px-6 py-2.5 rounded-full font-bold shadow-lg border border-gray-900" : "tab-inactive px-6 py-2.5 rounded-full font-bold shadow border border-gray-300 hover:bg-white cursor-pointer";
             });
             renderDashboard();
         }
 
-        // Initial Load
         fetchData();
     </script>
 </body>
